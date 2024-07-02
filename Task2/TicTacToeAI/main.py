@@ -15,6 +15,7 @@ GRAY = (64,64,64)
 RED = (255,0,0)
 GREEN = (0,255,0)
 BLACK = (0,0,0)
+YELLOW = (255,255,0)
 
 WIDTH = 400
 HEIGHT = 400
@@ -35,29 +36,31 @@ def mark_cell(row,col,player):
 def is_cell_available(row,col):
     return board[row][col] == 0
 
-def is_board_full(check_board=board):
+def is_board_full(board):
     for row in range(BOARD_ROWS):
         for col in range(BOARD_COLS):
-            if check_board[row][col] == 0:
+            if board[row][col] == 0:
                 return False
     return True
 
-def check_win(player,check_board=board):
+def check_win(player,board,msg=""):
+    if msg != "":
+        print(msg)
+        print(board)
     # check cols
     for col in range(BOARD_COLS):
-        if check_board[0][col] == player and check_board[1][col] == player and check_board[2][col] == player:
+        if board[0][col] == player and board[1][col] == player and board[2][col] == player:
             return 1
     # check rows
     for row in range(BOARD_ROWS):
-        if check_board[row][0] == player and check_board[row][1] == player and check_board[row][2] == player:
+        if board[row][0] == player and board[row][1] == player and board[row][2] == player:
             return 2
     # check negative slope 
-    if check_board[0][0] == player and check_board[1][1] == player and check_board[2][2] == player:
+    if board[0][0] == player and board[1][1] == player and board[2][2] == player:
             return 3
     # check positive slope
-    if check_board[2][0] == player and check_board[1][1] == player and check_board[0][2] == player:
+    if board[2][0] == player and board[1][1] == player and board[0][2] == player:
             return 4
-    
     return False
 
 def Minimax(minimax_board, depth,is_maximizing,alpha,beta):
@@ -100,7 +103,7 @@ def Minimax(minimax_board, depth,is_maximizing,alpha,beta):
                             break;
         return best_reward
      
-def best_move():
+def best_move(board):
     best_reward = float('-inf')
     move = (-1,-1)
     for row in range(BOARD_ROWS):
@@ -113,10 +116,7 @@ def best_move():
                        best_reward = reward
                        move = (row,col)
 
-    if move != (-1,-1):
-        mark_cell(move[0],move[1],2)
-        return True
-    return False
+    return move
 
 def draw_o(color,row,col):
     pygame.draw.circle(screen, color,(col * SQUARE_SIZE + SQUARE_SIZE // 2, row * SQUARE_SIZE + SQUARE_SIZE // 2), CIRCLE_RADIUS, CIRCLE_WIDTH)
@@ -144,6 +144,7 @@ def draw_figures(color=WHITE,trio=0,player=0):
                 draw_o(color,0,col)
                 draw_o(color,1,col)
                 draw_o(color,2,col)
+                
     if trio == 2:
         for row in range(BOARD_ROWS):
             if board[row][0] == player and board[row][1] == player and board[row][2] == player and player == 1:
@@ -154,6 +155,7 @@ def draw_figures(color=WHITE,trio=0,player=0):
                 draw_o(color,row,0)
                 draw_o(color,row,1)
                 draw_o(color,row,2)
+                
     if trio == 3:
         if board[0][0] == player and board[1][1] == player and board[2][2] == player and player == 1:
             draw_x(color,0,0)
@@ -163,6 +165,7 @@ def draw_figures(color=WHITE,trio=0,player=0):
             draw_o(color,0,0)
             draw_o(color,1,1)
             draw_o(color,2,2)
+            
     if trio == 4:
         if board[2][0] == player and board[1][1] == player and board[0][2] == player and player == 1:
             draw_x(color,2,0)
@@ -172,8 +175,11 @@ def draw_figures(color=WHITE,trio=0,player=0):
             draw_o(color,2,0)
             draw_o(color,1,1)
             draw_o(color,0,2)
-
-    color = WHITE
+    
+    if player != 0:
+        color = WHITE
+    else:
+        color = GRAY
 
     for row in range(BOARD_ROWS):
         for col in range(BOARD_COLS):
@@ -192,18 +198,31 @@ def draw_board(color=WHITE):
         #vertical line
         pygame.draw.line(screen, color,(SQUARE_SIZE * i, 0),(SQUARE_SIZE * i, HEIGHT),LINE_WIDTH)
 
-
-
-def restart_game():
-    screen.fill(BLACK)
-    draw_board()
-    board = [[0 for i in range(3)] for j in range(3)]
+    
 
 draw_board()
 
 player = 1
 game_over = False
 
+font = pygame.font.Font(None,40)
+msg2 = font.render("AI won the game!",True,RED)
+msg1 = font.render("You have won the game!",True,GREEN)
+msg0 = font.render("It's a Tie",True,YELLOW)
+
+def displayText(player):
+    if player == 2:
+        msg = msg2
+        msg_rect = msg2.get_rect()
+    elif player == 1:
+        msg = msg1
+        msg_rect = msg1.get_rect()
+    else:
+        msg = msg0
+        msg_rect = msg0.get_rect()
+
+    msg_rect.center = (WIDTH // 2, HEIGHT // 2)
+    return msg,msg_rect
 
 while True:
     for event in pygame.event.get():
@@ -218,39 +237,53 @@ while True:
             
             if is_cell_available(y,x):
                 mark_cell(y,x,player)
-                if check_win(player):
+                if check_win(player,board):
                    game_over = True
                 player = player % 2 + 1
 
                 if not game_over:
-                    if best_move():
-                        if check_win(2):
+                    row,col = best_move(board)
+                    if row != -1 and col != -1:
+                        mark_cell(row,col,2)
+                        print(board)
+                        if check_win(2,board):
                             game_over = True
+                            print(game_over)
                         player = player % 2 + 1
 
                 if not game_over:
-                    if is_board_full():
+                    if is_board_full(board):
                         game_over = True
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_q:
-                restart_game()
+            if event.key == pygame.K_q: 
+                screen.fill(BLACK)
+                board = [[0 for i in range(3)] for j in range(3)]
                 player = 1
                 game_over = False
-        
+                print("Restarting game!")
+                draw_board()
+                
     if not game_over:
-        draw_figures()
+        draw_figures(player=-1)
     else:
-        trio = check_win(1)
+        trio = check_win(1,board)
         if trio:
             draw_board()
             draw_figures(trio=trio,player=1)
+            m1,m2 = displayText(1)
+            screen.blit(m1,m2)
         else:
-            trio = check_win(2)
+            trio = check_win(2,board)
             if trio:
                 draw_board()
                 draw_figures(trio=trio,player=2)
+                m1,m2 = displayText(2)
+                screen.blit(m1,m2)
             else:
-                draw_board(GRAY)
+                draw_board()
                 draw_figures(GRAY)
+                m1,m2 = displayText(0)
+                screen.blit(m1,m2)
 
+    
     pygame.display.update()
