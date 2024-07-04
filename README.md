@@ -72,6 +72,7 @@ This project implements a real-time face recognition system using a pre-trained 
     ```
 
     This script will preprocess the data to extract face embeddings and then start the real-time face recognition using the webcam.
+Demo : ![Demo](demo.mp4)
 
 # Task 2
 ## Tic Tac Toe AI
