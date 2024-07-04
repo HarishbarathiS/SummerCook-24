@@ -83,12 +83,15 @@ Player vs AI gameplay
 An unbeatable AI opponent using the Minimax algorithm with Alpha-Beta pruning
 Visual feedback for game outcome
 ```
-TivTacToeAI/
+TicTacToeAI/
+│
+├── images/
+│   ├── AIwon.png
+│   └── Tie.png
 │
 ├── .gitignore
 ├── main.py
-├── requirements.txt
-└── README.md
+└── requirements.txt
 ```
 ### Installation
 
@@ -115,3 +118,6 @@ TivTacToeAI/
 - Click on a cell to place your mark (X)
 - The AI opponent will automatically make its move (O)
 - Press 'Q' to restart the game at any time
+### Screenshots from the game
+1. ![AI won](images/AIwon.png)
+2. ![Tie](images/Tie.png)
