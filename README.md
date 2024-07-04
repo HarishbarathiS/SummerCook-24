@@ -118,6 +118,8 @@ TicTacToeAI/
 - Click on a cell to place your mark (X)
 - The AI opponent will automatically make its move (O)
 - Press 'Q' to restart the game at any time
+- 
 ### Screenshots from the game
+
 1. ![AI won](images/AIwon.png)
 2. ![Tie](images/Tie.png)
