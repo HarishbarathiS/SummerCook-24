@@ -1,15 +1,17 @@
+# Import necessary libraries
 import sys
 import pygame
 import time
 
-
+# Initialize Pygame
 pygame.init()
 
+# Set up the game window
 WINDOW_SIZE = (400,400)
 screen = pygame.display.set_mode(WINDOW_SIZE)
 pygame.display.set_caption("Tic Tac Toe")
 
-
+# Define colors
 WHITE = (255,255,255)
 GRAY = (64,64,64)
 RED = (255,0,0)
@@ -17,6 +19,7 @@ GREEN = (0,255,0)
 BLACK = (0,0,0)
 YELLOW = (255,255,0)
 
+# Define game board dimensions
 WIDTH = 400
 HEIGHT = 400
 LINE_WIDTH = 5
@@ -27,15 +30,18 @@ CIRCLE_RADIUS = SQUARE_SIZE // BOARD_ROWS
 CIRCLE_WIDTH = 10
 CROSS_WIDTH = 15
 
+# Initialize the game board
 board = [[0 for i in range(3)]for j in range(3)]
 
-
+# Function to mark a cell on the board
 def mark_cell(row,col,player):
         board[row][col] = player
 
+# Function to check if a cell is available
 def is_cell_available(row,col):
     return board[row][col] == 0
 
+# Function to check if the board is full
 def is_board_full(board):
     for row in range(BOARD_ROWS):
         for col in range(BOARD_COLS):
@@ -43,26 +49,28 @@ def is_board_full(board):
                 return False
     return True
 
+# Function to check for a win
 def check_win(player,board,msg=""):
     if msg != "":
         print(msg)
         print(board)
-    # check cols
+    # Check columns
     for col in range(BOARD_COLS):
         if board[0][col] == player and board[1][col] == player and board[2][col] == player:
             return 1
-    # check rows
+    # Check rows
     for row in range(BOARD_ROWS):
         if board[row][0] == player and board[row][1] == player and board[row][2] == player:
             return 2
-    # check negative slope 
+    # Check negative slope diagonal
     if board[0][0] == player and board[1][1] == player and board[2][2] == player:
             return 3
-    # check positive slope
+    # Check positive slope diagonal
     if board[2][0] == player and board[1][1] == player and board[0][2] == player:
             return 4
     return False
 
+# Minimax algorithm with Alpha-Beta pruning
 def Minimax(minimax_board, depth,is_maximizing,alpha,beta):
      if check_win(2,minimax_board):
           return 1
@@ -102,7 +110,8 @@ def Minimax(minimax_board, depth,is_maximizing,alpha,beta):
                         if beta <= alpha:
                             break;
         return best_reward
-     
+
+# function to determine the best for AI  
 def best_move(board):
     best_reward = float('-inf')
     move = (-1,-1)
@@ -118,17 +127,18 @@ def best_move(board):
 
     return move
 
+# function to draw 'O'
 def draw_o(color,row,col):
     pygame.draw.circle(screen, color,(col * SQUARE_SIZE + SQUARE_SIZE // 2, row * SQUARE_SIZE + SQUARE_SIZE // 2), CIRCLE_RADIUS, CIRCLE_WIDTH)
 
-
+# function to draw 'X'
 def draw_x(color,row,col):
     pygame.draw.line(screen, color,(col * SQUARE_SIZE + SQUARE_SIZE // 4, row * SQUARE_SIZE + SQUARE_SIZE // 4), (col * SQUARE_SIZE + 3 * SQUARE_SIZE // 4, row * SQUARE_SIZE + 3 * SQUARE_SIZE // 4), CROSS_WIDTH)
     pygame.draw.line(screen, color,(col * SQUARE_SIZE + SQUARE_SIZE // 4, row * SQUARE_SIZE + 3 * SQUARE_SIZE // 4), (col * SQUARE_SIZE + 3 * SQUARE_SIZE // 4, row * SQUARE_SIZE + SQUARE_SIZE // 4), CROSS_WIDTH)
 
 
 
-
+#  function to draw all figures on the board
 def draw_figures(color=WHITE,trio=0,player=0):
     if player == 2:
         color = RED
@@ -190,7 +200,7 @@ def draw_figures(color=WHITE,trio=0,player=0):
                 if player != 1:
                     draw_x(color,row,col)
                
-
+# function to draw game board
 def draw_board(color=WHITE):
     for i in range(1,BOARD_ROWS):
         #horizontal line
@@ -199,17 +209,20 @@ def draw_board(color=WHITE):
         pygame.draw.line(screen, color,(SQUARE_SIZE * i, 0),(SQUARE_SIZE * i, HEIGHT),LINE_WIDTH)
 
     
-
+# draw initial board
 draw_board()
 
+# intialize game state
 player = 1
 game_over = False
 
+# set up game messages
 font = pygame.font.Font(None,40)
 msg2 = font.render("AI won the game!",True,RED)
 msg1 = font.render("You have won the game!",True,GREEN)
 msg0 = font.render("It's a Tie",True,YELLOW)
 
+# function to display game result text
 def displayText(player):
     if player == 2:
         msg = msg2
@@ -230,8 +243,8 @@ while True:
            sys.exit()
 
         elif pygame.mouse.get_pressed()[0]:
+            # handle mouse click
             mouse_pos = pygame.mouse.get_pos()
-            print(mouse_pos)
             x = mouse_pos[0] // SQUARE_SIZE
             y = mouse_pos[1] // SQUARE_SIZE
             
@@ -255,6 +268,7 @@ while True:
                         game_over = True
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_q: 
+                # reset game
                 screen.fill(BLACK)
                 board = [[0 for i in range(3)] for j in range(3)]
                 player = 1
@@ -264,6 +278,7 @@ while True:
     if not game_over:
         draw_figures(player=-1)
     else:
+        #display game result
         trio = check_win(1,board)
         if trio:
             draw_board()
@@ -283,5 +298,5 @@ while True:
                 m1,m2 = displayText(0)
                 screen.blit(m1,m2)
 
-    
+     # update the display
     pygame.display.update()
