@@ -72,3 +72,46 @@ This project implements a real-time face recognition system using a pre-trained 
     ```
 
     This script will preprocess the data to extract face embeddings and then start the real-time face recognition using the webcam.
+
+# Task 2
+## Tic Tac Toe AI
+### Overview
+This project implements a Tic Tac Toe game with an AI opponent using Python and Pygame.
+### Features:
+A graphical user interface built with Pygame
+Player vs AI gameplay
+An unbeatable AI opponent using the Minimax algorithm with Alpha-Beta pruning
+Visual feedback for game outcome
+```
+TivTacToeAI/
+│
+├── .gitignore
+├── main.py
+├── requirements.txt
+└── README.md
+```
+### Installation
+
+1. **Clone the repository**:
+
+    ```bash
+    git clone <repository_url>
+    cd <repository_directory>
+    ```
+
+2. **Install dependencies**:
+
+    Ensure you have `pip` installed. Then, run:
+
+    ```bash
+    pip install -r requirements.txt
+    ```
+### Usage
+
+1. **Run the game by executing** :
+    ```bash
+    python main.py
+    ```
+- Click on a cell to place your mark (X)
+- The AI opponent will automatically make its move (O)
+- Press 'Q' to restart the game at any time
