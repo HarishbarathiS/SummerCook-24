@@ -121,5 +121,5 @@ TicTacToeAI/
 - 
 ### Screenshots from the game
 
-1. ![AI won](Task2/TicTacToeAI/images/aiwon.png)
-2. ![Tie](Task2/TicTacToeAI/images/tie.png)
+![AI won](Task2/TicTacToeAI/images/aiwon.png)
+![Tie](Task2/TicTacToeAI/images/tie.png)
