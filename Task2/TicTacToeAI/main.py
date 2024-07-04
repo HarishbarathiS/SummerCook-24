@@ -245,10 +245,9 @@ while True:
                     row,col = best_move(board)
                     if row != -1 and col != -1:
                         mark_cell(row,col,2)
-                        print(board)
                         if check_win(2,board):
                             game_over = True
-                            print(game_over)
+
                         player = player % 2 + 1
 
                 if not game_over:
@@ -260,7 +259,6 @@ while True:
                 board = [[0 for i in range(3)] for j in range(3)]
                 player = 1
                 game_over = False
-                print("Restarting game!")
                 draw_board()
                 
     if not game_over:
