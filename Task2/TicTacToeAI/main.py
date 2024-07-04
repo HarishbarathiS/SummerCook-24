@@ -49,26 +49,26 @@ def is_board_full(board):
                 return False
     return True
 
+
 # Function to check for a win
-def check_win(player,board,msg=""):
-    if msg != "":
-        print(msg)
-        print(board)
+def check_win(player,board):
+    
     # Check columns
     for col in range(BOARD_COLS):
-        if board[0][col] == player and board[1][col] == player and board[2][col] == player:
+        if board[0][col] == board[1][col] == board[2][col] == player:
             return 1
     # Check rows
     for row in range(BOARD_ROWS):
-        if board[row][0] == player and board[row][1] == player and board[row][2] == player:
+        if board[row][0] == board[row][1] == board[row][2] == player:
             return 2
     # Check negative slope diagonal
-    if board[0][0] == player and board[1][1] == player and board[2][2] == player:
+    if board[0][0] == board[1][1] == board[2][2] == player:
             return 3
     # Check positive slope diagonal
-    if board[2][0] == player and board[1][1] == player and board[0][2] == player:
+    if board[2][0] == board[1][1] == board[0][2] == player:
             return 4
     return False
+
 
 # Minimax algorithm with Alpha-Beta pruning
 def Minimax(minimax_board, depth,is_maximizing,alpha,beta):
