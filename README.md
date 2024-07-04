@@ -5,22 +5,22 @@ This project implements a real-time face recognition system using a pre-trained 
 
 ### Directory Structure
 ```
-.
-├── __pycache__/
+├── pycache/
 ├── amma/
-│   ├── image1.jpg
-│   └── image2.jpg
+│ ├── image1.jpg
+│ └── image2.jpg
 ├── appa/
-│   ├── image1.jpg
-│   └── image2.jpg
+│ ├── image1.jpg
+│ └── image2.jpg
 ├── harish/
-│   ├── image1.jpg
-│   └── image2.jpg
+│ ├── image1.jpg
+│ └── image2.jpg
 ├── naveen/
-│   ├── image1.jpg
-│   └── image2.jpg
+│ ├── image1.jpg
+│ └── image2.jpg
 ├── .gitignore
 ├── face_embedding.py
+├── haarcascade_frontalface_default.xml
 ├── main.py
 └── requirements.txt
 ```
