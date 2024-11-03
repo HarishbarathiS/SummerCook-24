@@ -4,18 +4,26 @@ import cv2
 from facenet_pytorch import MTCNN, InceptionResnetV1
 from torchvision import transforms
 import numpy as np
+from torch.nn.functional import cosine_similarity
 
 
-# # MTCNN module for face detection
-# mtcnn = MTCNN(keep_all=True, device='cuda' if torch.cuda.is_available() else 'cpu')
-
-# haar cascade is a pre-trained model for detecting faces
+# haar cascade for face detection
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
+
+augmentation_transforms = transforms.Compose([
+    transforms.RandomRotation(degrees=45),          # Randomly rotate the image by ±15 degrees
+    transforms.RandomHorizontalFlip(p=0.5),         # Randomly flip the image horizontally with a 50% probability
+    transforms.ColorJitter(brightness=0.2,          # Randomly adjust brightness
+                           contrast=0.2, 
+                           saturation=0.2, 
+                           hue=0.1),
+])
+
+
 
 def preprocess_data(directory):
     # store embeddings and corresponding labels
-    embeddings = []
-    labels = []
+    embeddings_dict = {}
     # load the images from the file system 
     for person_name in os.listdir(directory):
         person_dir = os.path.join(directory, person_name)
@@ -25,13 +33,32 @@ def preprocess_data(directory):
                 # encode images to numerical values 
                 image = cv2.imread(image_path)
                 if image is not None:
+                    # Apply augmentations multiple times to increase diversity
+                    for _ in range(5):  # Applying augmentations 5 times per image
+                        augmented_image = augment_image(image)
+                        embedding = extract_face_embedding(augmented_image, person_name)
                     embedding = extract_face_embedding(image, person_name)
                     if embedding is not None:
-                        embeddings.append(embedding)
-                        labels.append(person_name)
+                        if person_name not in embeddings_dict:
+                            embeddings_dict[person_name] = []
+                        embeddings_dict[person_name].append(embedding)
     
-    return embeddings, labels
+    return embeddings_dict
 
+def augment_image(image):
+
+    # Convert OpenCV image (BGR) to PIL image for transforms
+    image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    image = transforms.ToPILImage()(image)
+    
+    # Apply the augmentation transformations
+    image = augmentation_transforms(image)
+    
+    # Convert the image back to OpenCV format (BGR)
+    image = np.array(image)
+    image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+    
+    return image
 
 # class for face recognition
 class SiameseNetwork(torch.nn.Module):
@@ -44,12 +71,8 @@ class SiameseNetwork(torch.nn.Module):
         return self.embedding_net(x)
 
 
-def extract_face_embedding(image,name):
-    # # Convert image to RGB and 
-    # rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-    # boxes, _ = mtcnn.detect(rgb_image)
-
-    
+def extract_face_embedding(image, name):
+    #haar classifier code 
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
     # Detect faces in the grayscale frame
@@ -59,7 +82,7 @@ def extract_face_embedding(image,name):
         for box in boxes:
             x, y, w, h = box.astype(int)
         
-            # maintain bounding box is within the image
+            # maintain bounding box within the image
             x, y = max(0, x), max(0, y)
             w = min(w, image.shape[1] - x)
             h = min(h, image.shape[0] - y)
@@ -81,33 +104,82 @@ def extract_face_embedding(image,name):
     
     return None
 
-def recognize_face(embedding, known_embeddings, known_labels):
-    if not known_embeddings:
+
+# embedding comparison using min_distance
+ 
+# def recognize_face(embedding, known_embeddings):
+#     if not known_embeddings:
+#         return "Unknown"
+    
+#     threshold = 1.0  # Define a threshold for recognition
+#     min_distance = float('inf')
+#     recognized_label = "Unknown"
+    
+#     # Compare input embedding with all known embeddings in the dictionary
+#     for label, embeddings in known_embeddings.items():
+#         for known_emb in embeddings:
+#             distance = torch.norm(embedding - known_emb)
+#             if distance < min_distance:
+#                 min_distance = distance
+#                 recognized_label = label
+                
+#     # Return recognized label if within the threshold, otherwise return "Unknown"
+#     return recognized_label,min_distance if min_distance < threshold else ("Unknown", min_distance)
+
+
+# embedding comparison using cosine similarity
+
+def recognize_face(embedding, embeddings_dict):
+    if not embeddings_dict:
         return "Unknown"
     
-    # calculates euclidean distance with stored embeddings
-    distances = [torch.norm(embedding - known_emb) for known_emb in known_embeddings]
-     
-    threshold = 1.0
+    # Normalize the embedding
+    embedding = embedding / embedding.norm()
     
-    # find the closest match based on the minimum distance
-    min_distance = min(distances)
-    min_index = distances.index(min_distance)
+    max_similarity = -1
+    recognized_label = "Unknown"
+    threshold = 0.6  # Cosine similarity threshold
     
-    # label of the closest match
-    recognized_label = known_labels[min_index]
+    for label, embeddings in embeddings_dict.items():
+        # Normalize each stored embedding and calculate cosine similarity
+        similarities = [cosine_similarity(embedding, emb / emb.norm(), dim=0) for emb in embeddings]
+        max_label_similarity = max(similarities)
+        
+        if max_label_similarity > max_similarity:
+            max_similarity = max_label_similarity
+            recognized_label = label
     
-    # determine if the face is recognized based on the threshold
-    if min_distance < threshold:
-        return recognized_label
-    else:
-        return "Unknown"
+    return recognized_label if max_similarity > threshold else "Unknown"
+
+
+# recognize face with similarity score
+def recognize_face_for_image(embedding, embeddings_dict):
+    if not embeddings_dict:
+        return "Unknown", 0.0
+
+    # Normalize the embedding
+    embedding = embedding / embedding.norm()
+
+    max_similarity = -1
+    recognized_label = "Unknown"
+    threshold = 0.6  # Cosine similarity threshold
+
+    for label, embeddings in embeddings_dict.items():
+        similarities = [cosine_similarity(embedding, emb / emb.norm(), dim=0).item() for emb in embeddings]
+        max_label_similarity = max(similarities)
+
+        if max_label_similarity > max_similarity:
+            max_similarity = max_label_similarity
+            recognized_label = label
+
+    return (recognized_label, max_similarity) if max_similarity > threshold else ("Unknown", max_similarity)
+
     
 
-if __name__ == "__main__":
-    # directory containing face images
-    dir = "."
+# if __name__ == "__main__":
+#     # directory containing face images
+#     dir = "."
     
-    # data preprocessing
-    embeddings, labels = preprocess_data(dir)
+#     # # data preprocessing
+#     # embeddings = preprocess_data(dir)
     
