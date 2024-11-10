@@ -1,51 +1,52 @@
 import cv2
 import torch
 from torchvision import transforms
-from face_embedding import SiameseNetwork, recognize_face, preprocess_data, recognize_face_for_image
+from app.face_embedding import SiameseNetwork, preprocess_data, recognize_face_for_image, preprocess_data_averaging
 from facenet_pytorch import MTCNN, InceptionResnetV1
 
 # Initialize the face cascade and siamese netowrk
 face_cascade = cv2.CascadeClassifier(cv2.data.haarcascades + 'haarcascade_frontalface_default.xml')
 siamese_net = SiameseNetwork().to('cuda' if torch.cuda.is_available() else 'cpu')
 
-# Initialize MTCNN for face detection and load the pretrained Siamese network
-mtcnn = MTCNN(keep_all=True, device='cuda' if torch.cuda.is_available() else 'cpu')
-siamese_net = InceptionResnetV1(pretrained='vggface2').eval().to('cuda' if torch.cuda.is_available() else 'cpu')
+# # Initialize MTCNN for face detection and load the pretrained Siamese network
+# mtcnn = MTCNN(keep_all=True, device='cuda' if torch.cuda.is_available() else 'cpu')
+# siamese_net = InceptionResnetV1(pretrained='vggface2').eval().to('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-def detect_and_classify_images(image_path, embeddings_dict):
-    # Load the image
-    image = cv2.imread(image_path)
-    rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # Convert to RGB for MTCNN
-    boxes, _ = mtcnn.detect(rgb_image)
+# def detect_and_classify_images(image_path, embeddings_dict):
+#     # Load the image
+#     image = cv2.imread(image_path)
+#     rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)  # Convert to RGB for MTCNN
+#     boxes, _ = mtcnn.detect(rgb_image)
     
-    # If faces are detected
-    if boxes is not None:
-        for box in boxes:
-            x1, y1, x2, y2 = map(int, box)  # Convert to integers
-            face_region = rgb_image[y1:y2, x1:x2]
+#     # If faces are detected
+#     if boxes is not None:
+#         for box in boxes:
+#             x1, y1, x2, y2 = map(int, box)  # Convert to integers
+#             face_region = rgb_image[y1:y2, x1:x2]
             
-            # Preprocess the face region
-            face_resized = cv2.resize(face_region, (160, 160))
-            face_tensor = transforms.ToTensor()(face_resized).unsqueeze(0).to(torch.float32)
-            face_tensor = face_tensor.to('cuda' if torch.cuda.is_available() else 'cpu')
+#             # Preprocess the face region
+#             face_resized = cv2.resize(face_region, (160, 160))
+#             face_tensor = transforms.ToTensor()(face_resized).unsqueeze(0).to(torch.float32)
+#             face_tensor = face_tensor.to('cuda' if torch.cuda.is_available() else 'cpu')
             
-            # Generate embedding
-            with torch.no_grad():
-                embedding = siamese_net(face_tensor).squeeze()
+#             # Generate embedding
+#             with torch.no_grad():
+#                 embedding = siamese_net(face_tensor).squeeze()
             
-            # Recognize the face by comparing with known embeddings
-            recognized_label, similarity = recognize_face_for_image(embedding, embeddings_dict)
+#             # Recognize the face by comparing with known embeddings
+#             recognized_label, similarity = recognize_face_for_image(embedding, embeddings_dict)
             
-            # Draw bounding box and label on the original image
-            cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 0), 2)
-            cv2.putText(image, f"{recognized_label} ({similarity:.2f})", (x1, y1 - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
+#             # Draw bounding box and label on the original image
+#             cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 0), 2)
+#             cv2.putText(image, f"{recognized_label} ({similarity:.2f})", (x1, y1 - 10),
+#                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 0, 0), 2)
 
-    # Display the result
-    cv2.imshow("Classroom Face Recognition", image)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+#     # Display the result
+#     cv2.imshow("Classroom Face Recognition", image)
+#     cv2.waitKey(0)
+#     cv2.destroyAllWindows()
+
 
 
 def real_time_face_recognition(embeddings):
@@ -83,11 +84,11 @@ def real_time_face_recognition(embeddings):
                         embedding = siamese_net(face_tensor).squeeze()
                     
                     # Recognize face
-                    recognized_label = recognize_face(embedding, embeddings)
+                    recognized_label, similarity = recognize_face_for_image(embedding, embeddings)
 
                     # Draw bounding box and label
                     cv2.rectangle(frame, (x, y), (x+w, y+h), (255, 0, 0), 2)
-                    cv2.putText(frame, (recognized_label), (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
+                    cv2.putText(frame,f"{recognized_label} ({similarity:.2f})", (x, y-10), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (255, 0, 0), 2)
         
         # Display frame
         cv2.imshow('Real-time Face Recognition', frame)
@@ -104,9 +105,9 @@ if __name__ == "__main__":
     dir = "."
     
     # Preprocess data 
-    embeddings_dict = preprocess_data(dir)
+    embeddings_dict = preprocess_data_averaging(dir)
     print(f"Loaded {len(embeddings_dict)} faces.")
     print(embeddings_dict.keys())
-    #real_time_face_recognition(embeddings_dict)
-    classroom_image_path = "test5.jpeg"
-    detect_and_classify_images(classroom_image_path, embeddings_dict)
+    real_time_face_recognition(embeddings_dict)
+    # classroom_image_path = "class_room_pic.jpeg"
+    # detect_and_classify_images(classroom_image_path, embeddings_dict)

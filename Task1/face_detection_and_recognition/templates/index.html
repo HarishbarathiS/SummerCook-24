@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Face Recognition</title>
+    <style>
+        .container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            padding: 20px;
+        }
+        #video {
+            border: 2px solid #333;
+            border-radius: 8px;
+        }
+        .timer {
+            font-size: 48px;
+            font-weight: bold;
+            color: #ff0000;
+            display: none;
+        }
+        .status-container {
+            margin-top: 20px;
+        }
+        .status-container p {
+            margin: 5px 0;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <video id="video" width="640" height="480" autoplay></video>
+        <div id="timer" class="timer">3</div>
+        <div class="status-container">
+            <h1 id="status"></h1>
+            <h1 id="name"></h1>
+            <h1 id="score"></h1>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const timer = document.getElementById('timer');
+        let isProcessing = false;
+        let faceDetectionInterval;
+        let countdownInterval;
+
+        // Start webcam
+        async function startWebcam() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: 640,
+                        height: 480,
+                        facingMode: 'user'
+                    } 
+                });
+                video.srcObject = stream;
+                // Start checking for faces once video is playing
+                video.onplay = () => {
+                    startFaceDetection();
+                };
+            } catch (err) {
+                console.error("Error accessing webcam: ", err);
+                document.getElementById('status').innerText = 'Error: Cannot access webcam';
+            }
+        }
+
+        // Function to check for faces
+        function checkForFace() {
+            if (!isProcessing) {
+                const canvas = document.createElement('canvas');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(video, 0, 0);
+                
+                // Send frame to backend to check for faces
+                canvas.toBlob((blob) => {
+                    const formData = new FormData();
+                    formData.append('image', blob);
+                    
+                    fetch('/check_face', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.face_detected && !isProcessing) {
+                            startCountdown();
+                        }
+                    })
+                    .catch(error => console.error('Error:', error));
+                }, 'image/jpeg');
+            }
+        }
+
+        // Start continuous face detection
+        function startFaceDetection() {
+            faceDetectionInterval = setInterval(checkForFace, 5000); // Check every 5000ms
+        }
+
+        // Function to start countdown
+        function startCountdown() {
+            isProcessing = true;
+            let count = 3;
+            clearResults();
+            timer.style.display = 'block';
+            timer.textContent = count;
+
+            countdownInterval = setInterval(() => {
+                count--;
+                timer.textContent = count;
+                
+                if (count === 0) {
+                    clearInterval(countdownInterval);
+                    captureAndClassify();
+                    
+                }
+            }, 1000);
+        }
+
+        //Function to clear resutls 
+
+        function clearResults(){
+            document.getElementById('status').innerText = "";
+            document.getElementById('name').innerText = "";
+            document.getElementById('score').innerText = "";
+        }
+
+        // Function to capture and classify
+        function captureAndClassify() {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0);
+            
+            // Convert to base64
+            const imageData = canvas.toDataURL('image/jpeg');
+
+            // Send to backend
+            fetch('/capture', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: imageData })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('status').innerText = `Status: ${data.status}`;
+                document.getElementById('name').innerText = `Name: ${data.name}`;
+                document.getElementById('score').innerText = 
+                    `Similarity Score: ${data.similarity_score.toFixed(2)}`;
+                
+                // Reset processing flag and hide timer
+                timer.style.display = 'none';
+                isProcessing = false;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                document.getElementById('status').innerText = 'Error processing image';
+                timer.style.display = 'none';
+                isProcessing = false;
+            });
+        }
+
+        // Start webcam when page loads
+        startWebcam();
+    </script>
+</body>
+</html>

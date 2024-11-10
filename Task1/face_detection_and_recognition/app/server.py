@@ -137,9 +137,23 @@ siamese_net = SiameseNetwork().to('cuda' if torch.cuda.is_available() else 'cpu'
 #     app.run(debug=True)
 
 
-@app.route('/')
+@app.route('/system')
 def index():
     return render_template('index.html')
+
+
+@app.route('/')
+def home():
+    return render_template('home.html')
+
+@app.route('/addstudent')
+def add_student():
+    return render_template('add_student.html')
+
+@app.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
+
 
 @app.route('/check_face', methods=['POST'])
 def check_face():
@@ -165,6 +179,49 @@ def check_face():
         return jsonify({
             'face_detected': False
         })
+    
+@app.route("/capture-and-add", methods = ['POST'])
+def capture_and_add():
+    try:
+        # Get image data from request
+        image_data = request.json['image']
+        
+        # Convert base64 to image
+        image_data = image_data.replace('data:image/jpeg;base64,', '')
+        image_bytes = base64.b64decode(image_data)
+        image = Image.open(io.BytesIO(image_bytes))
+        
+        # Convert to OpenCV format
+        frame = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+        
+        # Face detection and recognition
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        faces = face_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=5, minSize=(30, 30))
+        
+        if len(faces) == 0:
+            return jsonify({
+                'status': 'no_face_detected',
+                'name': 'No face detected',
+                'similarity_score': 0.0
+            })
+        
+        # Process the first detected face
+        x, y, w, h = faces[0]
+        face_region = frame[y:y+h, x:x+w]
+        
+        # Preprocess face
+        face_resized = cv2.resize(face_region, (160, 160))
+        face_tensor = transforms.ToTensor()(face_resized).unsqueeze(0).to(torch.float32)
+        face_tensor = face_tensor.to('cuda' if torch.cuda.is_available() else 'cpu')
+        
+        # Generate embedding
+        with torch.no_grad():
+            embedding = siamese_net(face_tensor).squeeze()
+
+        
+    except : 
+        print("")
+
 
 @app.route('/capture', methods=['POST'])
 def capture():
